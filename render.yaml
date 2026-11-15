@@ -1,0 +1,24 @@
+# Render Blueprint for the PeopleforPeople Campaign API (free web service).
+services:
+  - type: web
+    name: peopleforpeople-campaign-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m scripts.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: APP_ENV
+        value: production
+      - key: AUTH_MODE
+        value: remote
+      - key: AUTH_BASE_URL
+        value: https://auth-backend-lb6o.onrender.com
+      - key: CORS_ORIGINS
+        value: https://peopleforpeople-sigma.vercel.app,http://localhost:5173
+      # Optional: set DATABASE_URL to the shared Neon connection string in the Render dashboard.
+      # Without it the API uses SQLite, which resets to the demo campaigns on each restart.
+      - key: DATABASE_URL
+        sync: false
