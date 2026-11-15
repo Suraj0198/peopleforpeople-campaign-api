@@ -25,16 +25,19 @@ class CampaignStatus(str, enum.Enum):
     ARCHIVED = "ARCHIVED"
 
 
-def _enum(e: type[enum.Enum], length: int) -> Enum:
-    # stored as VARCHAR + CHECK constraint, so it works the same on SQLite and Postgres
-    return Enum(e, native_enum=False, create_constraint=True, length=length, values_callable=lambda members: [m.value for m in members])
+def _enum(e: type[enum.Enum], length: int, name: str) -> Enum:
+    # Stored as VARCHAR + CHECK constraint, so it works the same on SQLite and Postgres.
+    # Each column needs its own constraint name: PostgreSQL rejects two constraints with the
+    # same name in one table (the moderation log has old_status and new_status).
+    return Enum(e, name=name, native_enum=False, create_constraint=True, length=length,
+                values_callable=lambda members: [m.value for m in members])
 
 
 class Campaign(Base):
     __tablename__ = "campaigns"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    type: Mapped[CampaignType] = mapped_column(_enum(CampaignType, 30))
+    type: Mapped[CampaignType] = mapped_column(_enum(CampaignType, 30, "ck_campaigns_type"))
     title: Mapped[str] = mapped_column(String(120))
     summary: Mapped[str] = mapped_column(String(280))
     description: Mapped[str] = mapped_column(Text)
@@ -45,7 +48,7 @@ class Campaign(Base):
     offer_text: Mapped[str | None] = mapped_column(String(200))
     start_date: Mapped[date] = mapped_column(Date)
     end_date: Mapped[date | None] = mapped_column(Date)
-    status: Mapped[CampaignStatus] = mapped_column(_enum(CampaignStatus, 20), default=CampaignStatus.DRAFT)
+    status: Mapped[CampaignStatus] = mapped_column(_enum(CampaignStatus, 20, "ck_campaigns_status"), default=CampaignStatus.DRAFT)
     rejection_reason: Mapped[str | None] = mapped_column(String(500))
     created_by: Mapped[int] = mapped_column(Integer, index=True)  # users.id from the auth service
     reviewed_by: Mapped[int | None] = mapped_column(Integer)
@@ -63,8 +66,8 @@ class ModerationLog(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
-    old_status: Mapped[CampaignStatus | None] = mapped_column(_enum(CampaignStatus, 20))
-    new_status: Mapped[CampaignStatus] = mapped_column(_enum(CampaignStatus, 20))
+    old_status: Mapped[CampaignStatus | None] = mapped_column(_enum(CampaignStatus, 20, "ck_moderation_old_status"))
+    new_status: Mapped[CampaignStatus] = mapped_column(_enum(CampaignStatus, 20, "ck_moderation_new_status"))
     actor_id: Mapped[int] = mapped_column(Integer)
     reason: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
