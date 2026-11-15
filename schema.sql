@@ -22,12 +22,14 @@ CREATE TABLE IF NOT EXISTS campaigns (
 	created_at TIMESTAMP WITH TIME ZONE NOT NULL, 
 	updated_at TIMESTAMP WITH TIME ZONE NOT NULL, 
 	PRIMARY KEY (id), 
-	CONSTRAINT campaigntype CHECK (type IN ('social_cause', 'business_promotion')), 
-	CONSTRAINT campaignstatus CHECK (status IN ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED'))
+	CONSTRAINT ck_campaigns_type CHECK (type IN ('social_cause', 'business_promotion')), 
+	CONSTRAINT ck_campaigns_status CHECK (status IN ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED'))
 );
 
 CREATE INDEX IF NOT EXISTS ix_campaigns_category ON campaigns (category);
+
 CREATE INDEX IF NOT EXISTS ix_campaigns_created_by ON campaigns (created_by);
+
 CREATE INDEX IF NOT EXISTS ix_campaigns_public ON campaigns (status, start_date, end_date);
 
 CREATE TABLE IF NOT EXISTS campaign_joins (
@@ -50,9 +52,8 @@ CREATE TABLE IF NOT EXISTS campaign_moderation_log (
 	created_at TIMESTAMP WITH TIME ZONE NOT NULL, 
 	PRIMARY KEY (id), 
 	FOREIGN KEY(campaign_id) REFERENCES campaigns (id) ON DELETE CASCADE, 
-	CONSTRAINT campaignstatus CHECK (old_status IN ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED')), 
-	CONSTRAINT campaignstatus CHECK (new_status IN ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED'))
+	CONSTRAINT ck_moderation_old_status CHECK (old_status IN ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED')), 
+	CONSTRAINT ck_moderation_new_status CHECK (new_status IN ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED'))
 );
 
 CREATE INDEX IF NOT EXISTS ix_campaign_moderation_log_campaign_id ON campaign_moderation_log (campaign_id);
-
